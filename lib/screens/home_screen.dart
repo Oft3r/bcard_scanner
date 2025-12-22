@@ -7,6 +7,7 @@ import '../data/database_helper.dart';
 import '../services/text_recognition_service.dart';
 import 'card_detail_screen.dart';
 import 'map_screen.dart';
+import 'settings_screen.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../widgets/business_card_widget.dart';
 
@@ -343,8 +344,9 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: const Icon(Icons.settings_outlined),
         tooltip: 'Settings',
         onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Settings not implemented yet')),
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SettingsScreen()),
           );
         },
       ),

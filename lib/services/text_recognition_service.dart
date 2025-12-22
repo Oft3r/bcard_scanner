@@ -66,9 +66,9 @@ class TextRecognitionService {
       if (address.isEmpty && _isAddress(line)) {
         address = line;
         // Try to append next line if it looks like part of address (City/State/Zip)
-        if (i + 1 < lines.length && _isAddressContinuation(lines[i+1])) {
-          address += ', ${lines[i+1]}';
-          lines[i+1] = '';
+        if (i + 1 < lines.length && _isAddressContinuation(lines[i + 1])) {
+          address += ', ${lines[i + 1]}';
+          lines[i + 1] = '';
         }
         lines[i] = '';
         continue;
@@ -78,32 +78,32 @@ class TextRecognitionService {
     // 3. Third Pass: Name, Title, Company
     // Heuristic: Name is often the first non-consumed line, or the largest text (OCR blocks have frames, but here we simplify)
     // We will assume remaining lines at top are Name/Title/Company
-    
+
     List<String> remaining = lines.where((l) => l.isNotEmpty).toList();
-    
+
     if (remaining.isNotEmpty) {
       name = remaining[0]; // First remaining line usually name or company
-      
+
       if (remaining.length > 1) {
         // Check if second line is a job title (contains common title words)
         if (_isJobTitle(remaining[1])) {
-           title = remaining[1];
-           if (remaining.length > 2) company = remaining[2];
+          title = remaining[1];
+          if (remaining.length > 2) company = remaining[2];
         } else {
-           // Maybe first line was Company and second is Name? 
-           // Hard to tell without ML, stick to order: Name -> Title -> Company
-           if (remaining.length > 2) {
-             title = remaining[1];
-             company = remaining[2];
-           } else {
-             // If only 2 lines left, check if line 0 looks like company
-             if (_isCompany(remaining[0])) {
-               company = remaining[0];
-               name = remaining[1];
-             } else {
-               title = remaining[1];
-             }
-           }
+          // Maybe first line was Company and second is Name?
+          // Hard to tell without ML, stick to order: Name -> Title -> Company
+          if (remaining.length > 2) {
+            title = remaining[1];
+            company = remaining[2];
+          } else {
+            // If only 2 lines left, check if line 0 looks like company
+            if (_isCompany(remaining[0])) {
+              company = remaining[0];
+              name = remaining[1];
+            } else {
+              title = remaining[1];
+            }
+          }
         }
       }
     }
@@ -118,7 +118,12 @@ class TextRecognitionService {
       website: website,
       address: address,
       imagePath: imagePath,
-      category: 'Uncategorized',
+      category: _classifyCategory(
+        title: title,
+        company: company,
+        email: email,
+        website: website,
+      ),
       scanDate: DateTime.now(),
       isFavorite: false, // Default
       colorIndex: 0, // Could randomize this later
@@ -138,11 +143,11 @@ class TextRecognitionService {
   }
 
   bool _isWebsite(String text) {
-    return text.toLowerCase().contains('www.') || 
-           text.toLowerCase().startsWith('http') || 
-           text.toLowerCase().endsWith('.com') ||
-           text.toLowerCase().endsWith('.net') ||
-           text.toLowerCase().endsWith('.org');
+    return text.toLowerCase().contains('www.') ||
+        text.toLowerCase().startsWith('http') ||
+        text.toLowerCase().endsWith('.com') ||
+        text.toLowerCase().endsWith('.net') ||
+        text.toLowerCase().endsWith('.org');
   }
 
   String _cleanWebsite(String text) {
@@ -151,7 +156,11 @@ class TextRecognitionService {
 
   bool _hasPhoneLabel(String text) {
     final lower = text.toLowerCase();
-    return lower.contains('tel') || lower.contains('mob') || lower.contains('ph') || lower.contains('cell') || lower.contains('fax');
+    return lower.contains('tel') ||
+        lower.contains('mob') ||
+        lower.contains('ph') ||
+        lower.contains('cell') ||
+        lower.contains('fax');
   }
 
   bool _isPhone(String text) {
@@ -170,10 +179,32 @@ class TextRecognitionService {
     // Look for numbers combined with address keywords
     final lower = text.toLowerCase();
     final hasNumber = RegExp(r'\d').hasMatch(text);
-    final keywords = ['st', 'ave', 'rd', 'blvd', 'lane', 'drive', 'street', 'avenue', 'road', 'plaza', 'way', 'sq', 'floor', 'ste', 'suite', 'bldg', 'calle', 'av', 'paseo'];
-    
-    bool hasKeyword = keywords.any((k) => lower.contains(k) || lower.endsWith(k) || lower.contains('$k.'));
-    
+    final keywords = [
+      'st',
+      'ave',
+      'rd',
+      'blvd',
+      'lane',
+      'drive',
+      'street',
+      'avenue',
+      'road',
+      'plaza',
+      'way',
+      'sq',
+      'floor',
+      'ste',
+      'suite',
+      'bldg',
+      'calle',
+      'av',
+      'paseo',
+    ];
+
+    bool hasKeyword = keywords.any(
+      (k) => lower.contains(k) || lower.endsWith(k) || lower.contains('$k.'),
+    );
+
     // Also check for Zip Code pattern (5+ digits at end or start)
     bool hasZip = RegExp(r'\b\d{5}\b').hasMatch(text);
 
@@ -183,18 +214,268 @@ class TextRecognitionService {
   bool _isAddressContinuation(String text) {
     // City State Zip often looks like: "New York, NY 10001"
     return RegExp(r'\b\d{5}\b').hasMatch(text) || // Zip code
-           text.contains(',') || // City, State
-           text.length < 30; // Usually short line
+        text.contains(',') || // City, State
+        text.length < 30; // Usually short line
   }
 
   bool _isJobTitle(String text) {
-    final keywords = ['manager', 'director', 'engineer', 'developer', 'consultant', 'ceo', 'cto', 'cfo', 'president', 'founder', 'specialist', 'analyst', 'designer', 'lead', 'head', 'chief'];
+    final keywords = [
+      'manager',
+      'director',
+      'engineer',
+      'developer',
+      'consultant',
+      'ceo',
+      'cto',
+      'cfo',
+      'president',
+      'founder',
+      'specialist',
+      'analyst',
+      'designer',
+      'lead',
+      'head',
+      'chief',
+    ];
     return keywords.any((k) => text.toLowerCase().contains(k));
   }
-  
+
   bool _isCompany(String text) {
-    final keywords = ['inc', 'llc', 'ltd', 'group', 'systems', 'technologies', 'corp', 'solutions'];
+    final keywords = [
+      'inc',
+      'llc',
+      'ltd',
+      'group',
+      'systems',
+      'technologies',
+      'corp',
+      'solutions',
+    ];
     return keywords.any((k) => text.toLowerCase().contains(k));
+  }
+
+  /// Classifies the business card into a category based on extracted information
+  String _classifyCategory({
+    required String title,
+    required String company,
+    required String email,
+    required String website,
+  }) {
+    // Combine all text for analysis
+    final allText = '$title $company $email $website'.toLowerCase();
+
+    // Tech category keywords
+    final techKeywords = [
+      'software',
+      'developer',
+      'engineer',
+      'tech',
+      'technology',
+      'technologies',
+      'digital',
+      'data',
+      'cloud',
+      'cyber',
+      'security',
+      'it ',
+      'programming',
+      'web',
+      'app',
+      'mobile',
+      'ai',
+      'machine learning',
+      'devops',
+      'frontend',
+      'backend',
+      'fullstack',
+      'saas',
+      'startup',
+      'innovation',
+      'systems',
+      'network',
+      'database',
+      'analyst',
+      'computer',
+      'electronics',
+      'automation',
+      'api',
+      'platform',
+      'product manager',
+      'scrum',
+      'agile',
+      'ux',
+      'ui',
+      '.tech',
+      '.io',
+      '.dev',
+      'github',
+      'labs',
+      'solutions',
+    ];
+
+    // Finance category keywords
+    final financeKeywords = [
+      'finance',
+      'financial',
+      'bank',
+      'banking',
+      'investment',
+      'investor',
+      'capital',
+      'wealth',
+      'asset',
+      'fund',
+      'trading',
+      'trader',
+      'broker',
+      'insurance',
+      'accounting',
+      'accountant',
+      'cpa',
+      'tax',
+      'audit',
+      'controller',
+      'treasury',
+      'fintech',
+      'credit',
+      'loan',
+      'mortgage',
+      'advisor',
+      'planner',
+      'economics',
+      'actuary',
+      'underwriter',
+      'equity',
+      'portfolio',
+      'risk',
+      'compliance',
+      'cfo',
+      'ventures',
+    ];
+
+    // Creative category keywords
+    final creativeKeywords = [
+      'design',
+      'designer',
+      'creative',
+      'art',
+      'artist',
+      'graphic',
+      'photography',
+      'photographer',
+      'video',
+      'media',
+      'studio',
+      'agency',
+      'marketing',
+      'brand',
+      'branding',
+      'advertising',
+      'copywriter',
+      'content',
+      'social media',
+      'influencer',
+      'production',
+      'film',
+      'animation',
+      'illustration',
+      'illustrator',
+      'fashion',
+      'interior',
+      'architecture',
+      'architect',
+      'music',
+      'entertainment',
+      'event',
+      'creative director',
+      'visual',
+      '3d',
+      'motion',
+      'multimedia',
+    ];
+
+    // Services category keywords
+    final servicesKeywords = [
+      'consulting',
+      'consultant',
+      'service',
+      'services',
+      'legal',
+      'lawyer',
+      'attorney',
+      'law firm',
+      'healthcare',
+      'medical',
+      'doctor',
+      'clinic',
+      'hospital',
+      'therapy',
+      'therapist',
+      'coach',
+      'coaching',
+      'trainer',
+      'real estate',
+      'realtor',
+      'property',
+      'construction',
+      'contractor',
+      'maintenance',
+      'cleaning',
+      'catering',
+      'restaurant',
+      'hotel',
+      'hospitality',
+      'travel',
+      'logistics',
+      'shipping',
+      'transport',
+      'education',
+      'training',
+      'hr',
+      'human resources',
+      'recruitment',
+      'staffing',
+      'customer',
+      'support',
+      'sales',
+      'representative',
+      'manager',
+      'director',
+      'operations',
+      'retail',
+    ];
+
+    // Count matches for each category
+    int techScore = techKeywords.where((k) => allText.contains(k)).length;
+    int financeScore = financeKeywords.where((k) => allText.contains(k)).length;
+    int creativeScore = creativeKeywords
+        .where((k) => allText.contains(k))
+        .length;
+    int servicesScore = servicesKeywords
+        .where((k) => allText.contains(k))
+        .length;
+
+    // Find the category with the highest score
+    final scores = {
+      'Tech': techScore,
+      'Finance': financeScore,
+      'Creative': creativeScore,
+      'Services': servicesScore,
+    };
+
+    // Get the highest scoring category
+    String bestCategory = 'Uncategorized';
+    int highestScore = 0;
+
+    scores.forEach((category, score) {
+      if (score > highestScore) {
+        highestScore = score;
+        bestCategory = category;
+      }
+    });
+
+    // Only classify if we have at least 1 matching keyword
+    return highestScore > 0 ? bestCategory : 'Uncategorized';
   }
 
   void dispose() {
