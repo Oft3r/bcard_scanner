@@ -83,13 +83,16 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (widget.card.imagePath.isNotEmpty)
-              Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  image: DecorationImage(
-                    image: FileImage(File(widget.card.imagePath)),
-                    fit: BoxFit.cover,
+              GestureDetector(
+                onTap: () => _showFullImage(context, widget.card.imagePath),
+                child: Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    image: DecorationImage(
+                      image: FileImage(File(widget.card.imagePath)),
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),
@@ -276,6 +279,42 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
       debugPrint('Error: $e');
       debugPrint('Stack: $stackTrace');
     }
+  }
+
+  void _showFullImage(BuildContext context, String imagePath) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              width: double.infinity,
+              height: double.infinity,
+              child: InteractiveViewer(
+                child: Image.file(
+                  File(imagePath),
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: CircleAvatar(
+                backgroundColor: Colors.black54,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _deleteCard() async {
