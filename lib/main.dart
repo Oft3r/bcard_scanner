@@ -4,10 +4,15 @@ import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/home_screen.dart';
 
+import 'providers/ui_provider.dart';
+
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => UiProvider()),
+      ],
       child: const BusinessCardScannerApp(),
     ),
   );

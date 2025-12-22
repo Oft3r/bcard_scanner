@@ -10,6 +10,8 @@ import 'map_screen.dart';
 import 'settings_screen.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../widgets/business_card_widget.dart';
+import '../providers/ui_provider.dart';
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -47,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _initData() async {
     setState(() => _isLoading = true);
-    await DatabaseHelper.instance.seedDataIfEmpty();
+
     await _refreshCards();
   }
 
@@ -458,13 +460,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildGrid() {
+    final uiProvider = Provider.of<UiProvider>(context);
+    final isCompact = uiProvider.cardViewType == CardViewType.compact;
+
     return GridView.builder(
       padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 1, // Full width cards for impact
-        childAspectRatio: 1.8, // Business card ratio-ish
+        childAspectRatio: isCompact ? 3.5 : 1.8,
         crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
+        mainAxisSpacing: isCompact ? 8 : 16,
       ),
       itemCount: _filteredCards.length,
       itemBuilder: (context, index) {
@@ -475,6 +480,7 @@ class _HomeScreenState extends State<HomeScreen> {
           card: card,
           isSelectionMode: _isSelectionMode,
           isSelected: isSelected,
+          isCompact: isCompact,
           onTap: () async {
             if (_isSelectionMode) {
               _toggleCardSelection(card.id);

@@ -11,6 +11,7 @@ class BusinessCardWidget extends StatelessWidget {
   final VoidCallback onQrTap;
   final bool isSelectionMode;
   final bool isSelected;
+  final bool isCompact;
 
   const BusinessCardWidget({
     super.key,
@@ -20,10 +21,130 @@ class BusinessCardWidget extends StatelessWidget {
     required this.onQrTap,
     this.isSelectionMode = false,
     this.isSelected = false,
+    this.isCompact = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (isCompact) {
+      return _buildCompactCard(context);
+    }
+    return _buildStandardCard(context);
+  }
+
+  Widget _buildCompactCard(BuildContext context) {
+    final textColor = CardStyles.getContrastColor(card.colorIndex);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: CardStyles.getGradient(card.colorIndex),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+          border: isSelected
+              ? Border.all(color: Colors.blueAccent, width: 3)
+              : null,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                  image: card.imagePath.isNotEmpty
+                      ? DecorationImage(
+                          image: FileImage(File(card.imagePath)),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: card.imagePath.isEmpty
+                    ? Icon(Icons.business, color: textColor, size: 20)
+                    : null,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      card.name.isNotEmpty ? card.name : 'Unknown',
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${card.title} • ${card.company}',
+                      style: TextStyle(
+                        color: textColor.withOpacity(0.9),
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              if (isSelectionMode)
+                Checkbox(
+                  value: isSelected,
+                  onChanged: (bool? value) => onTap(),
+                  fillColor: MaterialStateProperty.resolveWith((states) {
+                    if (states.contains(MaterialState.selected)) {
+                      return Colors.blue;
+                    }
+                    return Colors.white.withOpacity(0.5);
+                  }),
+                  checkColor: Colors.white,
+                )
+              else
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        card.isFavorite
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color: textColor,
+                        size: 20,
+                      ),
+                      onPressed: onFavoriteToggle,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                    const SizedBox(width: 16),
+                    GestureDetector(
+                      onTap: onQrTap,
+                      child: Icon(Icons.qr_code, color: textColor, size: 20),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStandardCard(BuildContext context) {
     final textColor = CardStyles.getContrastColor(card.colorIndex);
 
     return GestureDetector(
@@ -58,7 +179,7 @@ class BusinessCardWidget extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -88,7 +209,9 @@ class BusinessCardWidget extends StatelessWidget {
                       if (!isSelectionMode)
                         IconButton(
                           icon: Icon(
-                            card.isFavorite ? Icons.favorite : Icons.favorite_border,
+                            card.isFavorite
+                                ? Icons.favorite
+                                : Icons.favorite_border,
                             color: textColor,
                           ),
                           onPressed: onFavoriteToggle,
@@ -99,7 +222,9 @@ class BusinessCardWidget extends StatelessWidget {
                           onChanged: (bool? value) {
                             onTap();
                           },
-                          fillColor: MaterialStateProperty.resolveWith((states) {
+                          fillColor: MaterialStateProperty.resolveWith((
+                            states,
+                          ) {
                             if (states.contains(MaterialState.selected)) {
                               return Colors.blue;
                             }
@@ -145,23 +270,24 @@ class BusinessCardWidget extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                         GestureDetector(
-                           onTap: onQrTap,
-                           child: Container(
-                             padding: const EdgeInsets.all(4),
-                             decoration: BoxDecoration(
-                               color: Colors.white,
-                               borderRadius: BorderRadius.circular(8),
-                             ),
-                             child: QrImageView(
-                               data: 'BEGIN:VCARD\nVERSION:3.0\nN:${card.name}\nORG:${card.company}\nTEL:${card.phone}\nEMAIL:${card.email}\nEND:VCARD',
-                               size: 32,
-                               padding: EdgeInsets.zero,
-                             ),
-                           ),
-                         ),
+                        GestureDetector(
+                          onTap: onQrTap,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: QrImageView(
+                              data:
+                                  'BEGIN:VCARD\nVERSION:3.0\nN:${card.name}\nORG:${card.company}\nTEL:${card.phone}\nEMAIL:${card.email}\nEND:VCARD',
+                              size: 32,
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
                       ],
-                    )
+                    ),
                 ],
               ),
             ),

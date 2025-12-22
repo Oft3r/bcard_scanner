@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/business_card.dart';
 import '../data/database_helper.dart';
 import '../services/geocoding_service.dart';
+import 'package:intl/intl.dart';
 
 class CardDetailScreen extends StatefulWidget {
   final BusinessCard card;
@@ -131,6 +132,19 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                   .toList(),
               onChanged: (val) => setState(() => _category = val!),
             ),
+            if (!widget.isNew) ...[
+              const SizedBox(height: 24),
+              Center(
+                child: Text(
+                  'Registered on: ${DateFormat.yMMMd().format(widget.card.scanDate)}',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 40),
           ],
         ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/ui_provider.dart';
+import '../services/backup_service.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -8,6 +10,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final uiProvider = Provider.of<UiProvider>(context);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -42,6 +45,75 @@ class SettingsScreen extends StatelessWidget {
                   title: const Text('Theme'),
                   subtitle: Text(_getThemeText(themeProvider.themeMode)),
                   onTap: () => _showThemeDialog(context, themeProvider),
+                  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                ),
+                Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: colorScheme.secondary.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.view_agenda,
+                      color: colorScheme.secondary,
+                    ),
+                  ),
+                  title: const Text('Card View'),
+                  subtitle: Text(_getViewText(uiProvider.cardViewType)),
+                  onTap: () => _showViewDialog(context, uiProvider),
+                  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+          _buildSectionHeader(context, 'Data Management'),
+          Card(
+            elevation: 0,
+            color: Theme.of(context).cardTheme.color ?? Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.grey.withOpacity(0.2)),
+            ),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.upload_file, color: Colors.blue),
+                  ),
+                  title: const Text('Export Database'),
+                  subtitle: const Text('Backup cards and images'),
+                  onTap: () async {
+                    await BackupService().exportDatabase(context);
+                  },
+                  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                ),
+                Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.file_download,
+                      color: Colors.orange,
+                    ),
+                  ),
+                  title: const Text('Import Database'),
+                  subtitle: const Text('Restore from backup'),
+                  onTap: () async {
+                    await BackupService().importDatabase(context);
+                  },
                   trailing: const Icon(Icons.chevron_right, color: Colors.grey),
                 ),
               ],
@@ -151,6 +223,77 @@ class SettingsScreen extends StatelessWidget {
       onChanged: (val) {
         if (val != null) {
           provider.setThemeMode(val);
+          Navigator.pop(context);
+        }
+      },
+    );
+  }
+
+  String _getViewText(CardViewType type) {
+    switch (type) {
+      case CardViewType.standard:
+        return 'Standard View';
+      case CardViewType.compact:
+        return 'Compact (List)';
+    }
+  }
+
+  void _showViewDialog(BuildContext context, UiProvider provider) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Choose View'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildViewOption(
+              ctx,
+              provider,
+              'Standard View',
+              CardViewType.standard,
+              Icons.view_carousel,
+            ),
+            _buildViewOption(
+              ctx,
+              provider,
+              'Compact (List)',
+              CardViewType.compact,
+              Icons.view_list,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildViewOption(
+    BuildContext context,
+    UiProvider provider,
+    String title,
+    CardViewType type,
+    IconData icon,
+  ) {
+    return RadioListTile<CardViewType>(
+      title: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.grey),
+          const SizedBox(width: 12),
+          Text(title),
+        ],
+      ),
+      value: type,
+      groupValue: provider.cardViewType,
+      activeColor: Theme.of(context).colorScheme.primary,
+      onChanged: (val) {
+        if (val != null) {
+          provider.setCardViewType(val);
           Navigator.pop(context);
         }
       },
