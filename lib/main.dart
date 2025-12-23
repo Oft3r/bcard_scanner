@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
-import 'screens/home_screen.dart';
+import 'screens/splash_screen.dart';
 
 import 'providers/ui_provider.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     MultiProvider(
       providers: [
@@ -173,7 +174,7 @@ class BusinessCardScannerApp extends StatelessWidget {
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: themeProvider.themeMode,
-      home: const HomeScreen(),
+      home: const SplashScreen(),
     );
   }
 }

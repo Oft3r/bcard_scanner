@@ -42,7 +42,13 @@
    flutter pub get
    ```
 
-3. **Run the app**:
+3. **Generate Assets (Optional)**:
+   If you change the app icon, regenerate the platform-specific icons:
+   ```bash
+   flutter pub run flutter_launcher_icons
+   ```
+
+4. **Run the app**:
    ```bash
    flutter run
    ```
@@ -53,13 +59,15 @@
 - **OCR Engine**: [Google ML Kit Text Recognition](https://pub.dev/packages/google_mlkit_text_recognition)
 - **Local Database**: [sqflite](https://pub.dev/packages/sqflite)
 - **Maps**: [flutter_map](https://pub.dev/packages/flutter_map) & [latlong2](https://pub.dev/packages/latlong2)
-- **Imaging**: [image_picker](https://pub.dev/packages/image_picker)
+- **Imaging**: [image_picker](https://pub.dev/packages/image_picker) & [flutter_launcher_icons](https://pub.dev/packages/flutter_launcher_icons)
 - **Communication**: [url_launcher](https://pub.dev/packages/url_launcher) & [share_plus](https://pub.dev/packages/share_plus)
 - **Utilities**: [intl](https://pub.dev/packages/intl), [uuid](https://pub.dev/packages/uuid), [qr_flutter](https://pub.dev/packages/qr_flutter)
 
 ## 📂 Project Structure
 
 ```text
+assets/
+└── icon/       # Source app icons
 lib/
 ├── data/       # Database helpers and persistence
 ├── models/     # Data entities (BusinessCard)
