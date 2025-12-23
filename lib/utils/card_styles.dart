@@ -22,8 +22,23 @@ class CardStyles {
       end: Alignment.bottomRight,
     );
   }
-  
+
   static Color getContrastColor(int index) {
      return Colors.white;
+  }
+
+  static IconData getCategoryIcon(String category) {
+    switch (category) {
+      case 'Tech':
+        return Icons.code;
+      case 'Finance':
+        return Icons.account_balance;
+      case 'Creative':
+        return Icons.palette;
+      case 'Services':
+        return Icons.handshake;
+      default:
+        return Icons.business;
+    }
   }
 }

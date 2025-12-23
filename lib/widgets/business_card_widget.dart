@@ -180,6 +180,20 @@ class BusinessCardWidget extends StatelessWidget {
               ),
             ),
 
+            // Category Watermark
+            Positioned.fill(
+              child: Center(
+                child: Opacity(
+                  opacity: 0.15,
+                  child: Icon(
+                    CardStyles.getCategoryIcon(card.category),
+                    size: 120,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
