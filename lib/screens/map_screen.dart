@@ -18,6 +18,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   bool _isUpdating = false;
   int _cardsWithoutLocation = 0;
+  String _selectedCategory = 'All';
 
   @override
   void initState() {
@@ -124,15 +125,25 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final validCards = widget.cards
+    // 1. Filter valid locations first
+    final validLocationCards = widget.cards
         .where((c) => c.latitude != null && c.longitude != null)
         .toList();
+
+    // 2. Get unique categories
+    final categories = ['All', ...widget.cards.map((c) => c.category).toSet().toList()..sort()];
+
+    // 3. Apply category filter
+    final displayCards = _selectedCategory == 'All'
+        ? validLocationCards
+        : validLocationCards.where((c) => c.category == _selectedCategory).toList();
+
     final hasCardsToUpdate = widget.cards.any(
       (c) => c.latitude == null && c.address.isNotEmpty,
     );
 
-    // Empty state when no cards have locations
-    if (validCards.isEmpty) {
+    // Empty state when no cards have locations (globally, not just filtered)
+    if (validLocationCards.isEmpty) {
       return Scaffold(
         body: Center(
           child: Padding(
@@ -185,30 +196,53 @@ class _MapScreenState extends State<MapScreen> {
       );
     }
 
-    // Calculate center
-    double latSum = 0;
-    double longSum = 0;
-    for (var card in validCards) {
-      latSum += card.latitude!;
-      longSum += card.longitude!;
+    // Calculate center based on displayed cards, fallback to validLocationCards or default
+    LatLng center;
+    if (displayCards.isNotEmpty) {
+      double latSum = 0;
+      double longSum = 0;
+      for (var card in displayCards) {
+        latSum += card.latitude!;
+        longSum += card.longitude!;
+      }
+      center = LatLng(
+        latSum / displayCards.length,
+        longSum / displayCards.length,
+      );
+    } else if (validLocationCards.isNotEmpty) {
+       // If filter returns empty, center on all valid cards (or keep previous center? this is simpler)
+       double latSum = 0;
+       double longSum = 0;
+       for (var card in validLocationCards) {
+         latSum += card.latitude!;
+         longSum += card.longitude!;
+       }
+       center = LatLng(
+         latSum / validLocationCards.length,
+         longSum / validLocationCards.length,
+       );
+    } else {
+      center = const LatLng(0, 0); // Should be handled by empty check above
     }
-    final center = LatLng(
-      latSum / validCards.length,
-      longSum / validCards.length,
-    );
 
     return Scaffold(
       body: Stack(
         children: [
           FlutterMap(
-            options: MapOptions(initialCenter: center, initialZoom: 4.0),
+            // Key helps to redraw map when center changes significantly if needed,
+            // but MapOptions usually handles updates if unique.
+            // We might want to keep the same map instance to avoid flickering.
+            options: MapOptions(
+              initialCenter: center,
+              initialZoom: 4.0,
+            ),
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.example.bcard_scanner',
               ),
               MarkerLayer(
-                markers: validCards.map((card) {
+                markers: displayCards.map((card) {
                   return Marker(
                     point: LatLng(card.latitude!, card.longitude!),
                     width: 100,
@@ -249,9 +283,52 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ],
           ),
-          // Stats badge
+
+          // Category Filters
           Positioned(
-            top: 60,
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              child: Container(
+                height: 60,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: categories.length,
+                  itemBuilder: (context, index) {
+                    final category = categories[index];
+                    final isSelected = _selectedCategory == category;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(category),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() => _selectedCategory = category);
+                          }
+                        },
+                        selectedColor: Colors.blueAccent,
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : Colors.black87,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                        backgroundColor: Colors.white,
+                        elevation: 2,
+                        shadowColor: Colors.black26,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+
+          // Stats badge (Moved to bottom left)
+          Positioned(
+            bottom: 32,
             left: 16,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -268,7 +345,7 @@ class _MapScreenState extends State<MapScreen> {
                   const Icon(Icons.people, size: 18, color: Colors.blueAccent),
                   const SizedBox(width: 6),
                   Text(
-                    '${validCards.length} on map',
+                    '${displayCards.length} found',
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
